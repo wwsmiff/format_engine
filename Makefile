@@ -1,4 +1,4 @@
-CC = clang++
+CC = g++
 CFLAGS = -std=c++17 -pedantic -Wall -Wextra -O0
 
 main: main.o
@@ -9,7 +9,7 @@ main.o: main.cpp
 
 .PHONY: clean
 clean:
-	rm -f main *.o
+	rm -f main *.o core*
 
 .PHONY: run
 run:
