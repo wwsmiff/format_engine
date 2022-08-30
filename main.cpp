@@ -3,12 +3,14 @@
 #include <string>
 #include <sstream>
 #include <fstream>
-#include <initializer_list>
 #include <any>
 #include <variant>
 #include <algorithm>
 
-using possible_types_variant = std::variant<int, float, double, std::string>;
+namespace format_engine
+{
+
+using possible_types_variant = std::variant<int, float, double, std::string, bool>;
 
 possible_types_variant get_value(const std::string &type, const std::any &any_)
 {
@@ -18,6 +20,7 @@ possible_types_variant get_value(const std::string &type, const std::any &any_)
 	if(type == "float") temp = std::any_cast<float>(any_);
 	if(type == "double") temp = std::any_cast<double>(any_);
 	if(type == "std::string" || type == "string") temp = std::any_cast<const char*>(any_);
+	if(type == "bool") temp = std::any_cast<bool>(any_);
 
 	return temp;
 }
@@ -79,7 +82,10 @@ std::string format(std::string &source, const std::vector<std::any> &values)
 	std::stringstream buffer_stream;
 
 	extract_data(source, types, declaration_order);
-	
+
+	if(types.size() > values.size()) { std::__throw_runtime_error("Format Engine: Expected more elements"); }
+	if(types.size() < values.size()) { std::__throw_runtime_error("Format Engine: Too many elements provided"); } 
+
 	std::string::iterator current_char = source.begin();
 	int index = 0;
 	while(current_char != source.end())
@@ -94,25 +100,28 @@ std::string format(std::string &source, const std::vector<std::any> &values)
 			if(auto value = std::get_if<int>(&temp))
 			{
 				while(*(current_char) != '>') ++current_char;
-
 				buffer_stream << *value;
 			}
 
 			else if(auto value = std::get_if<float>(&temp))
 			{
 				while(*(current_char) != '>') ++current_char;
-
 				buffer_stream << *value;
 			}
 
 			else if(auto value = std::get_if<std::string>(&temp))
 			{
 				while(*(current_char) != '>') ++current_char;
-
 				buffer_stream << *value;
 			}
 			
 			else if(auto value = std::get_if<double>(&temp))
+			{
+				while(*(current_char) != '>') ++current_char;
+				buffer_stream << *value;
+			}
+
+			else if(auto value = std::get_if<bool>(&temp))
 			{
 				while(*(current_char) != '>') ++current_char;
 				buffer_stream << *value;
@@ -124,12 +133,14 @@ std::string format(std::string &source, const std::vector<std::any> &values)
 	return buffer_stream.str();	
 }
 
+};
+
 int main()
 {
 	int a = 3;
 	int b = 4;
-	std::string test_string = "a = <int := 1>, b = <int := 2>, my name is \"<string := 3>\" and the value of pi is <float := 4>";
-	std::cout << format(test_string , {a, b, "Homer Simpson", 3.14f}) << std::endl;
+	std::string test_string = "a = <int := 1>, b = <int := 2>, a * b = <int := 3> \nmy name is \"<string := 4>\" and the value of pi is <float := 5>";
+	std::cout << format_engine::format(test_string , {a, b, a * b, "Homer Simpson", 3.14f}) << std::endl;
 
 	return EXIT_SUCCESS;
 }
